@@ -18,14 +18,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float turnSpeed;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private Vector3 moveDirection;
+    private bool isRun;
+
+
+    [Header("Attack")]
+    [SerializeField] private float aaCoolDownTime = 0.6f;
+    [SerializeField] private float curaaCoolDownTime;
+    [SerializeField] private bool isAttack = false;
 
     [Header("Camera")]
     [SerializeField] private Camera mainCam;
 
     [Header("Animation")]
     private readonly int hashIsRun = Animator.StringToHash("IsRun");
+    private readonly int hashaa = Animator.StringToHash("aa");
+     int hashaaCount = Animator.StringToHash("aaCount");
 
-    private bool isRun;
 
     private KeyCode jumpKeyCode = KeyCode.Space;
 
@@ -37,50 +45,53 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        //_MoveInput();
-        _Move();
+        if (!isAttack)
+        {
+            _MoveInput();
+        }
     }
 
     private void Update()
     {
-        _JumpInput();
-    }
-
-
-    private void _Move()
-    {
-        Vector2 moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-        bool isMove = moveInput.magnitude != 0;
-        animator.SetBool(hashIsRun, isMove);
-
-        if (isMove)
+        if (!isAttack)
         {
-            Vector3 lookForward = new Vector3(mainCam.transform.forward.x, 0f, mainCam.transform.forward.z).normalized;
-            Vector3 lookRight = new Vector3(mainCam.transform.right.x, 0f, mainCam.transform.right.z).normalized;
-            Vector3 moveDir = lookForward * moveInput.y + lookRight * moveInput.x;
-
-            //characterController.Move(moveDir * speed * Time.deltaTime);
-            _MoveTo(moveDir);
+            _JumpInput();
         }
+        OnClickAttack();
     }
 
-    private void _MoveInput()
+    private void OnClickAttack()
     {
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
-
-        if (x != 0 || z != 0)
+        if (Input.GetMouseButtonDown(0) && aaCoolDownTime <= 0)
         {
-            isRun = true;
-            animator.SetBool(hashIsRun, true);
+            curaaCoolDownTime = aaCoolDownTime;
+            isAttack = true;
+            animator.SetTrigger(hashaa);
         }
         else
         {
-            isRun = false;
-            animator.SetBool(hashIsRun, false);
+            aaCoolDownTime -= Time.deltaTime;
         }
+    }
+    public void MoveOn()
+    {
+        isAttack = false;
+    }
 
-        _MoveTo(new Vector3(x, 0, z));
+    #region Move
+    private void _MoveInput()
+    {
+        Vector2 moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+        isRun = moveInput.magnitude != 0;
+        animator.SetBool(hashIsRun, isRun);
+
+        Vector3 lookForward = new Vector3(mainCam.transform.forward.x, 0f, mainCam.transform.forward.z).normalized;
+        Vector3 lookRight = new Vector3(mainCam.transform.right.x, 0f, mainCam.transform.right.z).normalized;
+        Vector3 moveDir = lookForward * moveInput.y + lookRight * moveInput.x;
+
+        //characterController.Move(moveDir * speed * Time.deltaTime);
+        _MoveTo(moveDir);
+
     }
 
     private void _MoveTo(Vector3 direction)
@@ -93,7 +104,9 @@ public class PlayerController : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(new Vector3(moveDirection.x, 0, moveDirection.z)), Time.deltaTime * turnSpeed);
         }
     }
+    #endregion
 
+    #region Jump
     private void _JumpInput()
     {
         if (Input.GetKeyDown(jumpKeyCode))
@@ -106,7 +119,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
     private void _JumpTo()
     {
         if (characterController.isGrounded == true)
@@ -114,9 +126,12 @@ public class PlayerController : MonoBehaviour
             moveDirection.y = jumpForce;
         }
     }
+    #endregion
 
+    #region Gravity
     private void _Gravity()
     {
-            moveDirection.y += gravity * Time.deltaTime;
+        moveDirection.y += gravity * Time.deltaTime;
     }
+    #endregion
 }
